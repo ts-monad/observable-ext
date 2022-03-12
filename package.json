@@ -1,7 +1,7 @@
 {
-  "name": "@ts-monad/observable",
-  "version": "0.0.1-2",
-  "description": "Obervable Monad for TypeScript",
+  "name": "@ts-monad/observable-ext",
+  "version": "0.0.0",
+  "description": "Obervable Monad helper function",
   "main": "dist/index.js",
   "files": [
     "dist"
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ts-monad/observable.git"
+    "url": "git+https://github.com/ts-monad/observable-ext.git"
   },
   "keywords": [
     "Observable",
@@ -29,9 +29,9 @@
   "author": "Wei Wei",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ts-monad/observable/issues"
+    "url": "https://github.com/ts-monad/observable-ext/issues"
   },
-  "homepage": "https://ts-monad.github.io/observable/",
+  "homepage": "https://ts-monad.github.io/observable-ext/",
   "devDependencies": {
     "@babel/core": "^7.17.5",
     "@babel/preset-env": "^7.16.11",
