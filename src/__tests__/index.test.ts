@@ -8,7 +8,11 @@ import {
   property,
   propertyOf,
   throttle,
+  transition,
+  update,
 } from "..";
+
+const inc = transition((i: number) => i + 1);
 
 describe("#property & #propertyOf", () => {
   it("should extract a property of observable object", () => {
@@ -24,12 +28,12 @@ describe("#property & #propertyOf", () => {
 
     expect(obX.value).toBe(1);
 
-    obj.update(({ x, y }) => ({ x, y: y - 1 }));
+    update(obj)(({ x, y }) => ({ x, y: y - 1 }));
     expect(cbX).not.toBeCalled();
     expect(cbY).toBeCalledTimes(1);
     expect(cbY).toBeCalledWith(4);
 
-    obj.update(({ x, y }) => ({ x: x + 1, y }));
+    update(obj)(({ x, y }) => ({ x: x + 1, y }));
     expect(cbY).toBeCalledTimes(1);
     expect(cbX).toBeCalledTimes(1);
     expect(cbX).toBeCalledWith(2);
@@ -48,7 +52,7 @@ describe("currentValue", () => {
     expect(currentValue(mut)).toBe(0);
     expect(mut.isObserved()).toBeFalsy();
 
-    mut.update((i) => i + 1);
+    inc(mut);
 
     expect(currentValue(mut)).toBe(1);
     expect(mut.isObserved()).toBeFalsy();
@@ -64,21 +68,21 @@ describe("throttle", () => {
 
     expect(obn.value).toBe(0);
 
-    mut.update((i) => i + 1); // 1
+    inc(mut); // 1
     expect(cb).not.toBeCalled();
 
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 15));
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenLastCalledWith(1);
 
-    await new Promise((r) => setTimeout(r, 15));
-    mut.update((i) => i + 1); // 2
-    mut.update((i) => i + 1); // 3
-    mut.update((i) => i + 1); // 4
+    await new Promise(r => setTimeout(r, 15));
+    inc(mut); // 2
+    inc(mut); // 3
+    inc(mut); // 4
     expect(cb).toHaveBeenCalledTimes(2);
     expect(cb).toHaveBeenLastCalledWith(2);
 
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 15));
     expect(cb).toHaveBeenCalledTimes(3);
     expect(cb).toHaveBeenLastCalledWith(4);
 
@@ -97,20 +101,20 @@ describe("debounce", () => {
 
     expect(obn.value).toBe(0);
 
-    mut.update((i) => i + 1); // 1
+    inc(mut); // 1
     expect(cb).not.toBeCalled();
 
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 15));
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenLastCalledWith(1);
 
-    await new Promise((r) => setTimeout(r, 15));
-    mut.update((i) => i + 1); // 2
-    mut.update((i) => i + 1); // 3
-    mut.update((i) => i + 1); // 4
+    await new Promise(r => setTimeout(r, 15));
+    inc(mut); // 2
+    inc(mut); // 3
+    inc(mut); // 4
     expect(cb).toHaveBeenCalledTimes(1);
 
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 15));
     expect(cb).toHaveBeenCalledTimes(2);
     expect(cb).toHaveBeenLastCalledWith(4);
 
@@ -129,10 +133,10 @@ describe("delay", () => {
 
     expect(obn.value).toBe(0);
 
-    mut.update((i) => i + 1); // 1
+    inc(mut); // 1
     expect(cb).not.toBeCalled();
 
-    await new Promise((r) => setTimeout(r, 15));
+    await new Promise(r => setTimeout(r, 15));
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenLastCalledWith(1);
 
@@ -147,9 +151,9 @@ describe("chain", () => {
     const mutN = mutable(0);
     const mutF = mutable((x: number) => x * 3);
     const obM = chain(mutN)
-      .fmap((x) => x * 2) // n * 2
-      .fmap((x) => x + 1) // n * 2 + 1
-      .bind((x) => fmap((f: (n: number) => number) => f(x))(mutF)) // f(n * 2 + 1)
+      .fmap(x => x * 2) // n * 2
+      .fmap(x => x + 1) // n * 2 + 1
+      .bind(x => fmap((f: (n: number) => number) => f(x))(mutF)) // f(n * 2 + 1)
       .observable(); // m = (n * 2 + 1) * 3
 
     const cb = jest.fn();
@@ -157,11 +161,11 @@ describe("chain", () => {
 
     expect(value).toBe(3);
 
-    mutN.update((i) => i + 1); // n is 1
+    inc(mutN); // n is 1
 
     expect(cb).toHaveBeenLastCalledWith(9);
 
-    mutF.update((f) => (x) => f(x) - x - 1); // m = (n * 2 + 1) * 2 - 1
+    update(mutF)(f => x => f(x) - x - 1); // m = (n * 2 + 1) * 2 - 1
 
     expect(cb).toHaveBeenLastCalledWith(5);
 

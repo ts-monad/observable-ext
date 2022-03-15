@@ -1,6 +1,7 @@
 import {
   bind,
   fmap,
+  MutableStore,
   observable,
   Observable,
   Observer,
@@ -21,17 +22,26 @@ export const currentValue = <T>(ob: Observable<T>): T => {
   return value;
 };
 
+export const update =
+  <T>(mut: MutableStore<T>) =>
+  (f: (v: T) => T): T =>
+    mut.set(f(mut.get()));
+
+export const transition =
+  <T>(f: (v: T) => T) =>
+  (mut: MutableStore<T>): T =>
+    update(mut)(f);
 export const tmap =
   <T>(f: (observer: Observer<T>) => Observer<T>) =>
   (ob: Observable<T>): Observable<T> =>
-    observable((observer) => ob.observe(f(observer)));
+    observable(observer => ob.observe(f(observer)));
 
 export const throttle = (ms: number) =>
-  tmap((observer) => {
+  tmap(observer => {
     let timestamp = Date.now();
     let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    return (newValue) => {
+    return newValue => {
       const notify = () => {
         if (timeout) {
           clearTimeout(timeout);
@@ -51,9 +61,9 @@ export const throttle = (ms: number) =>
   });
 
 export const debounce = (ms: number) =>
-  tmap((observer) => {
+  tmap(observer => {
     let timeout: ReturnType<typeof setTimeout> | null = null;
-    return (newValue) => {
+    return newValue => {
       if (timeout) {
         clearTimeout(timeout);
       }
@@ -65,7 +75,7 @@ export const debounce = (ms: number) =>
   });
 
 export const delay = (ms: number) =>
-  tmap((observer) => (newValue) => setTimeout(() => observer(newValue), ms));
+  tmap(observer => newValue => setTimeout(() => observer(newValue), ms));
 
 export type ObservableChain<S> = {
   fmap: <T>(f: (s: S) => T) => ObservableChain<T>;
@@ -74,7 +84,7 @@ export type ObservableChain<S> = {
 };
 
 export const chain = <S>(ob: Observable<S>): ObservableChain<S> => ({
-  fmap: (f) => chain(fmap(f)(ob)),
-  bind: (f) => chain(bind(f)(ob)),
+  fmap: f => chain(fmap(f)(ob)),
+  bind: f => chain(bind(f)(ob)),
   observable: () => ob,
 });
