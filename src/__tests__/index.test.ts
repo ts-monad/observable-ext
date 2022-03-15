@@ -152,7 +152,7 @@ describe("chain", () => {
     const mutF = mutable((x: number) => x * 3);
     const obM = chain(mutN)
       .fmap(x => x * 2) // n * 2
-      .fmap(x => x + 1) // n * 2 + 1
+      .tap(fmap(x => x + 1)) // n * 2 + 1
       .bind(x => fmap((f: (n: number) => number) => f(x))(mutF)) // f(n * 2 + 1)
       .observable(); // m = (n * 2 + 1) * 3
 

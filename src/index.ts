@@ -31,60 +31,66 @@ export const transition =
   <T>(f: (v: T) => T) =>
   (mut: MutableStore<T>): T =>
     update(mut)(f);
-export const tmap =
-  <T>(f: (observer: Observer<T>) => Observer<T>) =>
-  (ob: Observable<T>): Observable<T> =>
-    observable(observer => ob.observe(f(observer)));
 
-export const throttle = (ms: number) =>
-  tmap(observer => {
-    let timestamp = Date.now();
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+export const throttle =
+  (ms: number) =>
+  <T>(ob: Observable<T>): Observable<T> =>
+    observable<T>(observer => {
+      let timestamp = Date.now();
+      let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    return newValue => {
-      const notify = () => {
+      return ob.observe(newValue => {
+        const notify = () => {
+          if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+
+          const now = Date.now();
+          if (now > timestamp + ms) {
+            timestamp = now;
+            observer(newValue);
+          } else {
+            timeout = setTimeout(notify, timestamp + ms - now);
+          }
+        };
+        notify();
+      });
+    });
+
+export const debounce =
+  (ms: number) =>
+  <T>(ob: Observable<T>): Observable<T> =>
+    observable<T>(observer => {
+      let timeout: ReturnType<typeof setTimeout> | null = null;
+      return ob.observe(newValue => {
         if (timeout) {
           clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
           timeout = null;
-        }
-
-        const now = Date.now();
-        if (now > timestamp + ms) {
-          timestamp = now;
           observer(newValue);
-        } else {
-          timeout = setTimeout(notify, timestamp + ms - now);
-        }
-      };
-      notify();
-    };
-  });
+        }, ms);
+      });
+    });
 
-export const debounce = (ms: number) =>
-  tmap(observer => {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    return newValue => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      timeout = setTimeout(() => {
-        timeout = null;
-        observer(newValue);
-      }, ms);
-    };
-  });
-
-export const delay = (ms: number) =>
-  tmap(observer => newValue => setTimeout(() => observer(newValue), ms));
+export const delay =
+  (ms: number) =>
+  <T>(ob: Observable<T>): Observable<T> =>
+    observable<T>(observer =>
+      ob.observe(newValue => setTimeout(() => observer(newValue), ms))
+    );
 
 export type ObservableChain<S> = {
   fmap: <T>(f: (s: S) => T) => ObservableChain<T>;
   bind: <T>(f: (s: S) => Observable<T>) => ObservableChain<T>;
+  tap: <T>(f: (s: Observable<S>) => Observable<T>) => ObservableChain<T>;
   observable: () => Observable<S>;
 };
 
 export const chain = <S>(ob: Observable<S>): ObservableChain<S> => ({
   fmap: f => chain(fmap(f)(ob)),
   bind: f => chain(bind(f)(ob)),
+  tap: f => chain(f(ob)),
   observable: () => ob,
 });
